@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stage"
+version = "0.1.0"
+description = "Manage assets and their version"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+
+authors = [
+    { name = "Allen Rose", email = "RoseAllenM@gmail.com" }
+]
+
+urls = { Homepage = "https://github.com/RoseAllenM/stage" }
+
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+    "pydantic~=2.12"
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy~=1.19",
+    "pre-commit~=4.5",
+    "pytest~=9.0",
+    "pytest-cov~=7.0",
+    "pytest-mock~=3.15",
+    "ruff~=0.15"
+]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+addopts = "--cov"
+testpaths = ["tests"]
+
+[tool.ruff]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "PD"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

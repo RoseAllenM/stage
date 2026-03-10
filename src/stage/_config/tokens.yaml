@@ -1,0 +1,20 @@
+department:
+- animation
+- cfx
+- fx
+- modeling
+- rigging
+- texturing
+
+name: "[0-9A-z_]+"
+
+type: 
+- character
+- dressing
+- environment
+- fx  # This isn't a type of asset, 'sim' and/or 'volume' would be more appropriate
+- prop
+- set
+- vehicle
+
+version: "\\d+"

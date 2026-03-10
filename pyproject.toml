@@ -22,7 +22,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "pydantic~=2.12"
+    "omegaconf>=2.3.0",
+    "pydantic~=2.12",
+    "universal-pathlib>=0.3.10",
 ]
 
 [project.optional-dependencies]
@@ -52,6 +54,9 @@ select = ["E", "F", "I", "PD"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+
+[tool.setuptools.package-data]
+stage = ["_config/*.yaml"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

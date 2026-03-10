@@ -37,3 +37,18 @@ This package using the following
    ```shell
    pre-commit install
    ```
+
+## Running the FastAPI service
+
+After setting up the development environment, start the API locally with:
+
+```shell
+uvicorn stage.api:app --reload
+```
+
+> [!NOTE]
+> `uvicorn` is part of the "dev" package dependencies.
+
+The service will be available at `http://127.0.0.1:8000`
+
+- OpenAPI docs: `http://127.0.0.1:8000/docs`

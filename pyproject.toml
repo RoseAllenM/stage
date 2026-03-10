@@ -22,19 +22,22 @@ classifiers = [
 ]
 
 dependencies = [
-    "omegaconf>=2.3.0",
+    "fastapi~=0.116",
+    "omegaconf~=2.3",
     "pydantic~=2.12",
-    "universal-pathlib>=0.3.10",
+    "universal-pathlib~=0.3",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "httpx~=0.28",
     "mypy~=1.19",
     "pre-commit~=4.5",
     "pytest~=9.0",
     "pytest-cov~=7.0",
     "pytest-mock~=3.15",
-    "ruff~=0.15"
+    "ruff~=0.15",
+    "uvicorn~=0.38",
 ]
 
 [tool.mypy]

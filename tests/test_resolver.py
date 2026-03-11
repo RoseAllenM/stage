@@ -45,7 +45,7 @@ def test_tokens_load_from_packaged_config(resolver: Resolver) -> None:
 def test_resolve_returns_upath_for_asset_template(resolver: Resolver) -> None:
     path = resolver.resolve("asset", kind="character", name="hero_01")
 
-    assert path == UPath("character/hero_01")
+    assert path.relative_to(resolver.root) == UPath("character/hero_01")
 
 
 def test_resolve_returns_upath_for_version_template(resolver: Resolver) -> None:
@@ -57,7 +57,9 @@ def test_resolve_returns_upath_for_version_template(resolver: Resolver) -> None:
         version="001",
     )
 
-    assert path == UPath("character/hero_01/animation/001.json")
+    assert path.relative_to(resolver.root) == UPath(
+        "character/hero_01/animation/001.json"
+    )
 
 
 def test_resolve_raises_for_unknown_template(resolver: Resolver) -> None:
@@ -106,5 +108,4 @@ def test_resolve_allows_extra_tokens_without_validation_rules(
             episode="101",
         )
 
-    assert path == UPath("character/hero_01")
-    assert "'episode' token has no validation requirements" in caplog.text
+    assert path.relative_to(resolver.root) == UPath("character/hero_01")

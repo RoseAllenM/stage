@@ -92,6 +92,19 @@ def cli(ctx, info: bool, debug: bool):
 
 
 @cli.command()
+@click.argument("asset_name")
+@click.argument("asset_type")
+@click.pass_context
+def add(ctx, asset_name, asset_type):
+    """Add an asset from a JSON file."""
+    asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
+    try:
+        asset.create()
+    except Exception as e:
+        logger.warning(e)
+
+
+@cli.command()
 @click.argument("file_path", type=click.Path(exists=True))
 @click.pass_context
 def load(ctx, file_path):

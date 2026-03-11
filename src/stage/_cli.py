@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_asset_json(
-    file_path: click.Path,
+    file_path: str,
 ) -> dict[str, dict[str, dict[str, dict[int, bool]]]]:
     """Organize the contents of the .json file."""
-    with open(str(file_path)) as f:
+    with open(file_path) as f:
         entries = json.load(f)
 
     asset_types = {}
@@ -91,11 +91,11 @@ def cli(ctx, info: bool, debug: bool):
     ctx.obj["resolver"] = Resolver()
 
 
-@cli.command()
+@cli.command(name="add")
 @click.argument("asset_name")
 @click.argument("asset_type")
 @click.pass_context
-def add(ctx, asset_name, asset_type):
+def add_asset(ctx, asset_name, asset_type):
     """Add an asset from a JSON file."""
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
     try:
@@ -104,11 +104,11 @@ def add(ctx, asset_name, asset_type):
         logger.warning(e)
 
 
-@cli.command()
+@cli.command(name="get")
 @click.argument("asset_name")
 @click.argument("asset_type")
 @click.pass_context
-def get(ctx, asset_name, asset_type):
+def get_asset(ctx, asset_name, asset_type):
     """Get an asset by name and type."""
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
     print("Asset", asset.id, "found" if asset.exists else "missing")
@@ -148,11 +148,11 @@ def list_assets(ctx, asset_name, asset_type):
         print("No Assets found")
 
 
-@cli.command()
+@cli.command(name="load")
 @click.argument("file_path", type=click.Path(exists=True))
 @click.pass_context
-def load(ctx, file_path):
-    """Load assets from a JSON file."""
+def load_asset_versions(ctx, file_path):
+    """Load assets and versions from a JSON file."""
     _resolver = ctx.obj["resolver"]
 
     for kind, assets in sorted(_parse_asset_json(file_path).items()):

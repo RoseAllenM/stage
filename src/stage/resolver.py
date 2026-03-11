@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import tempfile
+from copy import deepcopy
 
 from omegaconf import OmegaConf
 from upath import UPath
@@ -45,16 +46,16 @@ class Resolver:
         """All named tokenized locations."""
         if self._templates is None:
             self._templates = _load_config_file("templates.yaml")
-        return self._templates
+        return deepcopy(self._templates)
 
     @property
     def tokens(self) -> dict[str, list[str] | str]:
         """The validation patterns for tokens in templates."""
         if self._tokens is None:
             self._tokens = _load_config_file("tokens.yaml")
-        return self._tokens
+        return deepcopy(self._tokens)
 
-    def _validate_token(self, key: str, value: str):
+    def _validate_token(self, key: str, value: int | str):
         """Ensure the given value match the requirements for the token."""
         try:
             pattern = self.tokens[key]
@@ -69,21 +70,13 @@ class Resolver:
                 f"'{key}' token value '{value}' isn't a valid value {pattern}",
             )
 
-        match = re.fullmatch(pattern=pattern, string=value)
+        match = re.fullmatch(pattern=pattern, string=str(value))
         if not match:
             raise ValueError(
                 f"'{key}' token value '{value}' doesn't match regex pattern {pattern}",
             )
 
-    def create(self, template: str, /, exist_ok: bool = False, **tokens) -> UPath:
-        """Validate and create the template using the given tokens"""
-        path = self.resolve(template, **tokens)
-
-        (path.parent if path.suffix else path).mkdir(parents=True, exist_ok=exist_ok)
-
-        return path
-
-    def resolve(self, template: str, /, **tokens) -> UPath:
+    def resolve(self, template: str, /, **tokens) -> str:
         """Validate and resolve template using the given tokens."""
         try:
             path = self.templates[template]
@@ -96,7 +89,7 @@ class Resolver:
             self._validate_token(key, value)
 
         try:
-            return self.store / path.format(**tokens)
+            return path.format(**tokens)
         except KeyError as e:
             msg = f"Template {template} missing required tokens {path}"
             logger.warning(msg)

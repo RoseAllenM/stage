@@ -114,6 +114,40 @@ def get(ctx, asset_name, asset_type):
     print("Asset", asset.id, "found" if asset.exists else "missing")
 
 
+@cli.command(name="list")
+@click.option(
+    "--asset-name",
+    "asset_name",
+    required=False,
+    default=None,
+    help="Filter by asset name",
+)
+@click.option(
+    "--asset-type",
+    "asset_type",
+    required=False,
+    default=None,
+    help="Filter by asset type",
+)
+@click.pass_context
+def list_assets(ctx, asset_name, asset_type):
+    """List all assets."""
+    found = False
+    for asset in Asset.find(
+        kind=asset_type,
+        name=asset_name,
+        resolver=ctx.obj["resolver"],
+    ):
+        if not found:
+            print("\nFound Assets:\n")
+            found = True
+
+        print(asset.id)
+
+    if not found:
+        print("No Assets found")
+
+
 @cli.command()
 @click.argument("file_path", type=click.Path(exists=True))
 @click.pass_context

@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Generator
 
 from upath import UPath
 
@@ -48,3 +49,22 @@ class Entity:
             return getattr(self, "_tokens")
         except AttributeError:
             return {}
+
+    @staticmethod
+    def _tokens_to_kwargs(resolver: Resolver | None = None, **tokens) -> dict[str, Any]:
+        """Convert raw token key/values to instantiation kwargs"""
+        return {"resolver": resolver, **tokens}
+
+    @classmethod
+    def find(cls, resolver: Resolver | None = None, **tokens) -> Generator[Entity]:
+        """Yield any existing instance that match the given tokens."""
+        if not cls._template:
+            raise NotImplementedError(
+                f"Class {cls.__name__} doesn't specify a template"
+            )
+
+        resolver = resolver or Resolver()
+
+        tokens = {key: value for key, value in tokens.items() if value is not None}
+        for _, values in resolver.iterate(cls._template, **tokens):
+            yield cls(**cls._tokens_to_kwargs(resolver=resolver, **values))

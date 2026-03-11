@@ -2,8 +2,10 @@ import importlib.resources
 import logging
 import os
 import re
+import string
 import tempfile
 from copy import deepcopy
+from typing import Generator, Tuple
 
 from omegaconf import OmegaConf
 from upath import UPath
@@ -76,6 +78,30 @@ class Resolver:
                 f"'{key}' token value '{value}' doesn't match regex pattern {pattern}",
             )
 
+    def iterate(
+        self,
+        template: str,
+        /,
+        **tokens,
+    ) -> Generator[Tuple[UPath, dict[str, str]]]:
+        """Find and yield existing instances of the given template."""
+        try:
+            path = self.templates[template]
+        except KeyError as e:
+            msg = f"No template named '{template}'"
+            logger.warning(msg)
+            raise ValueError(msg) from e
+
+        tokens = deepcopy(tokens)
+        for key in _get_tokens(path):
+            pattern = self.tokens.get(key, "\\.+")
+            if isinstance(pattern, list):
+                pattern = "|".join(pattern)
+
+            tokens.setdefault(key, f"(?P<{key}>{pattern})")
+
+        yield from _recursive_match(root=self.store, parts=path.split("/"), **tokens)
+
     def resolve(self, template: str, /, **tokens) -> str:
         """Validate and resolve template using the given tokens."""
         try:
@@ -96,6 +122,11 @@ class Resolver:
             raise KeyError(msg) from e
 
 
+def _get_tokens(value: str) -> set[str]:
+    """Get the required token keys for the given template."""
+    return {key for _, key, _, _ in string.Formatter().parse(value) if key is not None}
+
+
 def _load_config_file(name: str) -> dict:
     """The named file from the configuration directory."""
     path = os.getenv(_STAGE_CONFIG)
@@ -105,3 +136,29 @@ def _load_config_file(name: str) -> dict:
         config = str(importlib.resources.files(_DEFAULT_CONFIG).joinpath(name))
 
     return OmegaConf.to_container(OmegaConf.load(config), resolve=True)  # pyright: ignore[reportReturnType]
+
+
+def _recursive_match(
+    root: UPath,
+    parts: list[str],
+    **tokens,
+) -> Generator[Tuple[UPath, dict[str, str]]]:
+    """Recursively iterate through directories to find existing matches."""
+    if not root.is_dir():
+        return
+
+    pattern, *parts = parts
+    pattern = pattern.format(**tokens)
+    for child in sorted(root.iterdir()):
+        match = re.fullmatch(pattern=pattern, string=child.name)
+
+        if not match:
+            continue
+
+        combined = {**tokens, **match.groupdict()}
+
+        if not parts:
+            yield child, combined
+            continue
+
+        yield from _recursive_match(root=child, parts=parts, **combined)

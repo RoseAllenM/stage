@@ -1,2 +1,2 @@
-asset: "{type}/{name}"
+asset: "{kind}/{name}"
 version: ${asset}/{department}/{version}.json

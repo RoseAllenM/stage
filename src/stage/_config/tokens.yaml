@@ -6,15 +6,15 @@ department:
 - rigging
 - texturing
 
-name: "[0-9A-z_]+"
-
-type: 
+kind: 
 - character
 - dressing
 - environment
-- fx  # This isn't a type of asset, 'sim' and/or 'volume' would be more appropriate
+- fx  # This isn't a kind of asset. 'effect', 'sim', and/or 'volume' would be good options.
 - prop
 - set
 - vehicle
+
+name: "[0-9A-z_]+"
 
 version: "\\d+"

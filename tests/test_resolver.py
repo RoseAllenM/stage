@@ -13,8 +13,8 @@ def resolver() -> Resolver:
 
 def test_templates_load_from_packaged_config(resolver: Resolver) -> None:
     assert resolver.templates == {
-        "asset": "{type}/{name}",
-        "version": "{type}/{name}/{department}/{version}.json",
+        "asset": "{kind}/{name}",
+        "version": "{kind}/{name}/{department}/{version}.json",
     }
 
 
@@ -28,8 +28,7 @@ def test_tokens_load_from_packaged_config(resolver: Resolver) -> None:
             "rigging",
             "texturing",
         ],
-        "name": "[0-9A-z_]+",
-        "type": [
+        "kind": [
             "character",
             "dressing",
             "environment",
@@ -38,12 +37,13 @@ def test_tokens_load_from_packaged_config(resolver: Resolver) -> None:
             "set",
             "vehicle",
         ],
+        "name": "[0-9A-z_]+",
         "version": r"\d+",
     }
 
 
 def test_resolve_returns_upath_for_asset_template(resolver: Resolver) -> None:
-    path = resolver.resolve("asset", type="character", name="hero_01")
+    path = resolver.resolve("asset", kind="character", name="hero_01")
 
     assert path == UPath("character/hero_01")
 
@@ -51,7 +51,7 @@ def test_resolve_returns_upath_for_asset_template(resolver: Resolver) -> None:
 def test_resolve_returns_upath_for_version_template(resolver: Resolver) -> None:
     path = resolver.resolve(
         "version",
-        type="character",
+        kind="character",
         name="hero_01",
         department="animation",
         version="001",
@@ -69,7 +69,7 @@ def test_resolve_raises_for_invalid_list_token_value(resolver: Resolver) -> None
     with pytest.raises(ValueError):
         resolver.resolve(
             "version",
-            type="character",
+            kind="character",
             name="hero_01",
             department="lighting",
             version="001",
@@ -80,7 +80,7 @@ def test_resolve_raises_for_invalid_regex_token_value(resolver: Resolver) -> Non
     with pytest.raises(ValueError):
         resolver.resolve(
             "version",
-            type="character",
+            kind="character",
             name="hero_01",
             department="animation",
             version="v001",
@@ -91,7 +91,7 @@ def test_resolve_raises_when_required_tokens_are_missing(
     resolver: Resolver,
 ) -> None:
     with pytest.raises(KeyError):
-        resolver.resolve("version", type="character", name="hero_01")
+        resolver.resolve("version", kind="character", name="hero_01")
 
 
 def test_resolve_allows_extra_tokens_without_validation_rules(
@@ -101,7 +101,7 @@ def test_resolve_allows_extra_tokens_without_validation_rules(
     with caplog.at_level(logging.INFO):
         path = resolver.resolve(
             "asset",
-            type="character",
+            kind="character",
             name="hero_01",
             episode="101",
         )

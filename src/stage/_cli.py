@@ -105,6 +105,16 @@ def add(ctx, asset_name, asset_type):
 
 
 @cli.command()
+@click.argument("asset_name")
+@click.argument("asset_type")
+@click.pass_context
+def get(ctx, asset_name, asset_type):
+    """Get an asset by name and type."""
+    asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
+    print("Asset", asset.id, "found" if asset.exists else "missing")
+
+
+@cli.command()
 @click.argument("file_path", type=click.Path(exists=True))
 @click.pass_context
 def load(ctx, file_path):

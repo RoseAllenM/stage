@@ -35,7 +35,7 @@ class Version(stage.entities.Entity):
 
     def create(self, active: bool, exist_ok: bool = False):
         """Write the given json data to the resolved template."""
-        if not exist_ok and self._path.exists():
+        if not exist_ok and self.exists:
             raise FileExistsError(f"Version {self._path} already exists")
 
         self._path.parent.mkdir(parents=True, exist_ok=True)

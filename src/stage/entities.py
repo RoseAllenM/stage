@@ -32,6 +32,11 @@ class Entity:
         return self._resolver.store / self.id
 
     @property
+    def exists(self) -> bool:
+        """Whether the Entity exists in the service."""
+        return self._path.exists()
+
+    @property
     def id(self) -> str:
         """The unique identier for this Entity."""
         return self._id

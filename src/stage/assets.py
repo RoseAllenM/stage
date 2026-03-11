@@ -25,6 +25,9 @@ class Asset(stage.entities.Entity):
 
     def create(self, exist_ok: bool = False):
         """Create the Asset on disk."""
+        if not exist_ok and self.exists:
+            raise FileExistsError(f"Asset {self._path} already exists")
+
         self._path.mkdir(parents=True, exist_ok=exist_ok)
 
     def new_version(self, department: str, number: int, active: bool) -> Version:

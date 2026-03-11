@@ -31,7 +31,7 @@ def test_asset_new_version_creates_version_file(asset: Asset) -> None:
     assert isinstance(version, Version)
     assert version.asset is asset
     assert version.id == "character/hero_01/animation/1.json"
-    assert version._path.exists()
+    assert version.exists
     assert json.loads(version._path.read_text()) == {"active": True}
 
 

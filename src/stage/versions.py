@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
 import stage.entities
 
@@ -28,10 +28,37 @@ class Version(stage.entities.Entity):
 
         super().__init__(resolver=resolver)
 
+        self._payload = None
+
     @property
     def asset(self) -> Asset:
         """The parent Asset of this Version."""
         return self._asset
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the Version is active or not."""
+        return self.payload.get("active") or False
+
+    @property
+    def payload(self) -> dict[str, Any]:
+        """The stored key/values for the Version"""
+        if self._payload is None:
+            with self._path.open() as f:
+                self._payload = json.load(f)
+        return self._payload
+
+    @staticmethod
+    def _tokens_to_kwargs(resolver: Resolver | None = None, **tokens) -> dict[str, Any]:
+        """Convert raw token key/values to instantiation kwargs"""
+        from stage.assets import Asset
+
+        return {
+            "asset": Asset(kind=tokens["kind"], name=tokens["name"], resolver=resolver),
+            "department": tokens["department"],
+            "number": int(tokens["version"]),
+            "resolver": resolver,
+        }
 
     def create(self, active: bool, exist_ok: bool = False):
         """Write the given json data to the resolved template."""
@@ -42,3 +69,16 @@ class Version(stage.entities.Entity):
 
         with self._path.open("w") as f:
             json.dump({"active": active}, f, indent=4, sort_keys=True)
+
+    @classmethod
+    def find(
+        cls,
+        resolver: Resolver | None = None,
+        **tokens,
+    ) -> Generator[stage.entities.Entity]:
+        """Yield any existing instance that match the given tokens."""
+        tokens.pop("version", None)
+        if "number" in tokens:
+            tokens["version"] = tokens.pop("number")
+
+        yield from super().find(resolver=resolver, **tokens)

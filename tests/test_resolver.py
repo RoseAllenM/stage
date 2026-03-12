@@ -155,3 +155,51 @@ def test_templates_and_tokens_can_load_from_stage_config_directory(
 
     assert resolver.templates == {"asset": "custom/{kind}/{name}"}
     assert resolver.tokens == {"kind": ["prop"], "name": "[a-z]+"}
+
+
+def test_iterate_yields_matching_existing_asset_paths_and_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store = tmp_path / "store"
+    (store / "character" / "hero_01").mkdir(parents=True)
+    (store / "prop" / "chair").mkdir(parents=True)
+    monkeypatch.setenv("STAGE_STORE", str(store))
+
+    resolver = Resolver()
+
+    matches = list(resolver.iterate("asset", kind="character"))
+
+    assert matches == [
+        (
+            store / "character" / "hero_01",
+            {"kind": "character", "name": "hero_01"},
+        ),
+    ]
+
+
+def test_iterate_yields_matching_versions_with_captured_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store = tmp_path / "store"
+    version_path = store / "character" / "hero_01" / "animation" / "1.json"
+    version_path.parent.mkdir(parents=True)
+    version_path.write_text('{"active": true}', encoding="utf-8")
+    monkeypatch.setenv("STAGE_STORE", str(store))
+
+    resolver = Resolver()
+
+    matches = list(resolver.iterate("version", kind="character", name="hero_01"))
+
+    assert matches == [
+        (
+            version_path,
+            {
+                "kind": "character",
+                "name": "hero_01",
+                "department": "animation",
+                "version": "1",
+            },
+        ),
+    ]

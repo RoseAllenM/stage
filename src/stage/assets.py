@@ -21,8 +21,6 @@ class Asset(stage.entities.Entity):
 
         super().__init__(resolver=resolver)
 
-        self._versions = None
-
     def create(self, exist_ok: bool = False):
         """Create the Asset on disk."""
         if not exist_ok and self.exists:

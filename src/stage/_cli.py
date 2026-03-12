@@ -223,6 +223,29 @@ def add_version(ctx, asset_name, asset_type, department, version_num, status):
         logger.warning(e)
 
 
+@versions.command(name="get")
+@click.argument("asset_name")
+@click.argument("asset_type")
+@click.argument("department")
+@click.argument("version_num", type=int)
+@click.pass_context
+def get_version(ctx, asset_name, asset_type, department, version_num):
+    """Get a specific asset version."""
+    try:
+        version = next(
+            Version.find(
+                kind=asset_type,
+                name=asset_name,
+                department=department,
+                number=version_num,
+                resolver=ctx.obj["resolver"],
+            ),
+        )
+        print("Version", version.id, "found")
+    except StopIteration:
+        print("No Version found")
+
+
 def main():
     """Entry point for the CLI."""
     cli(obj={})

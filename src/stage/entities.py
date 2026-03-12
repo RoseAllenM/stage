@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from typing import Any, Generator
 
 from upath import UPath
@@ -46,7 +47,7 @@ class Entity:
     def tokens(self) -> dict[str, int | str]:
         """The identifying key/values for this Entity."""
         try:
-            return getattr(self, "_tokens")
+            return deepcopy(getattr(self, "_tokens"))
         except AttributeError:
             return {}
 

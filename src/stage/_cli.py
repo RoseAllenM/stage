@@ -100,6 +100,7 @@ def add_asset(ctx, asset_name, asset_type):
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
     try:
         asset.create()
+        print("Created Asset", asset.id)
     except Exception as e:
         logger.warning(e)
 
@@ -193,6 +194,33 @@ def load_asset_versions(ctx, file_path):
 
             if asset and loaded:
                 print(f"\nLoaded Asset {asset.id} Versions{'\n\t'.join(loaded)}")
+
+
+@cli.group(name="versions")
+def versions():
+    """CLI group to manage asset version subcommands"""
+    pass
+
+
+@versions.command(name="add")
+@click.argument("asset_name")
+@click.argument("asset_type")
+@click.argument("department")
+@click.argument("version_num", type=int)
+@click.argument("status")
+@click.pass_context
+def add_version(ctx, asset_name, asset_type, department, version_num, status):
+    """Add an asset version."""
+    asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
+    try:
+        version = asset.new_version(
+            department=department,
+            number=version_num,
+            active=status.lower() == "active",
+        )
+        print("Created Version", version.id)
+    except Exception as e:
+        logger.warning(e)
 
 
 def main():

@@ -97,6 +97,17 @@ def test_load_command_creates_only_contiguous_versions(
     assert not (store / "character" / "hero_01" / "animation" / "3.json").exists()
 
 
+def test_load_command_reports_when_nothing_is_loaded(tmp_path: Path) -> None:
+    file_path = tmp_path / "assets.json"
+    file_path.write_text("[]", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["load", str(file_path)])
+
+    assert result.exit_code == 0, result.output
+    assert "No Assets loaded" in result.output
+
+
 def test_cli_rejects_info_and_debug_flags_together(tmp_path: Path) -> None:
     file_path = tmp_path / "assets.json"
     file_path.write_text("[]", encoding="utf-8")
@@ -122,7 +133,23 @@ def test_add_asset_command_creates_asset_directory(
     result = runner.invoke(cli, ["add", "hero_01", "character"])
 
     assert result.exit_code == 0, result.output
+    assert "Created Asset character/hero_01" in result.output
     assert (store / "character" / "hero_01").is_dir()
+
+
+def test_add_asset_command_reports_creation_failure(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    store = tmp_path / "store"
+    monkeypatch.setenv("STAGE_STORE", str(store))
+    (store / "character" / "hero_01").mkdir(parents=True)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["add", "hero_01", "character"])
+
+    assert result.exit_code != 0
+    assert "Failed to create Asset character/hero_01" in result.output
 
 
 def test_get_asset_reports_found_and_missing(monkeypatch, tmp_path: Path) -> None:
@@ -170,3 +197,145 @@ def test_list_command_reports_when_no_assets_are_found(
 
     assert result.exit_code == 0, result.output
     assert "No Assets found" in result.output
+
+
+def test_versions_add_command_creates_version_file(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    store = tmp_path / "store"
+    monkeypatch.setenv("STAGE_STORE", str(store))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["versions", "add", "hero_01", "character", "animation", "1", "active"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Created Version character/hero_01/animation/1.json" in result.output
+    assert (store / "character" / "hero_01" / "animation" / "1.json").exists()
+
+
+def test_versions_add_command_rejects_invalid_status(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("STAGE_STORE", str(tmp_path / "store"))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["versions", "add", "hero_01", "character", "animation", "1", "pending"],
+    )
+
+    assert result.exit_code != 0
+    assert (
+        "Invalid status 'pending'. Expected one of: active, inactive" in result.output
+    )
+
+
+def test_versions_add_command_reports_creation_failure(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    store = tmp_path / "store"
+    monkeypatch.setenv("STAGE_STORE", str(store))
+    version_path = store / "character" / "hero_01" / "animation" / "1.json"
+    version_path.parent.mkdir(parents=True)
+    version_path.write_text('{"active": true}', encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["versions", "add", "hero_01", "character", "animation", "1", "active"],
+    )
+
+    assert result.exit_code != 0
+    assert "Failed to create Version for character/hero_01 animation 1" in result.output
+
+
+def test_versions_get_command_reports_found_and_missing(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    store = tmp_path / "store"
+    monkeypatch.setenv("STAGE_STORE", str(store))
+    version_path = store / "character" / "hero_01" / "animation" / "1.json"
+    version_path.parent.mkdir(parents=True)
+    version_path.write_text('{"active": true}', encoding="utf-8")
+
+    runner = CliRunner()
+    found = runner.invoke(
+        cli,
+        ["versions", "get", "hero_01", "character", "animation", "1"],
+    )
+    missing = runner.invoke(
+        cli,
+        ["versions", "get", "hero_01", "character", "animation", "2"],
+    )
+
+    assert found.exit_code == 0, found.output
+    assert missing.exit_code == 0, missing.output
+    assert "Version character/hero_01/animation/1.json found" in found.output
+    assert "No Version found" in missing.output
+
+
+def test_versions_list_command_filters_by_status(monkeypatch, tmp_path: Path) -> None:
+    store = tmp_path / "store"
+    monkeypatch.setenv("STAGE_STORE", str(store))
+    animation_dir = store / "character" / "hero_01" / "animation"
+    animation_dir.mkdir(parents=True)
+    (animation_dir / "1.json").write_text('{"active": true}', encoding="utf-8")
+    (animation_dir / "2.json").write_text('{"active": false}', encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "versions",
+            "list",
+            "hero_01",
+            "character",
+            "--department",
+            "animation",
+            "--status",
+            "active",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Found Versions:" in result.output
+    assert "character/hero_01/animation/1.json" in result.output
+    assert "character/hero_01/animation/2.json" not in result.output
+
+
+def test_versions_list_command_reports_invalid_status(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("STAGE_STORE", str(tmp_path / "store"))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["versions", "list", "hero_01", "character", "--status", "pending"],
+    )
+
+    assert result.exit_code != 0
+    assert (
+        "Invalid status 'pending'. Expected one of: active, inactive" in result.output
+    )
+
+
+def test_versions_list_command_reports_when_no_versions_are_found(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("STAGE_STORE", str(tmp_path / "store"))
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["versions", "list", "hero_01", "character"])
+
+    assert result.exit_code == 0, result.output
+    assert "No Versions found" in result.output

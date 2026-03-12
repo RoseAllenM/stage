@@ -10,6 +10,11 @@ from stage.versions import Version
 logger = logging.getLogger(__name__)
 
 
+def _fail(message: str) -> None:
+    """Raise a user-facing CLI error."""
+    raise click.ClickException(message)
+
+
 def _parse_asset_json(
     file_path: str,
 ) -> dict[str, dict[str, dict[str, dict[int, bool]]]]:
@@ -100,9 +105,9 @@ def add_asset(ctx, asset_name, asset_type):
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
     try:
         asset.create()
-        print("Created Asset", asset.id)
+        click.echo(f"Created Asset {asset.id}")
     except Exception as e:
-        logger.warning(e)
+        _fail(f"Failed to create Asset {asset.id}: {e}")
 
 
 @cli.command(name="get")
@@ -112,7 +117,7 @@ def add_asset(ctx, asset_name, asset_type):
 def get_asset(ctx, asset_name, asset_type):
     """Get an asset by name and type."""
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
-    print("Asset", asset.id, "found" if asset.exists else "missing")
+    click.echo(f"Asset {asset.id} {'found' if asset.exists else 'missing'}")
 
 
 @cli.command(name="list")
@@ -140,13 +145,13 @@ def list_assets(ctx, asset_name, asset_type):
         resolver=ctx.obj["resolver"],
     ):
         if not found:
-            print("\nFound Assets:\n")
+            click.echo("\nFound Assets:\n")
             found = True
 
-        print(asset.id)
+        click.echo(asset.id)
 
     if not found:
-        print("No Assets found")
+        click.echo("No Assets found")
 
 
 @cli.command(name="load")
@@ -155,6 +160,7 @@ def list_assets(ctx, asset_name, asset_type):
 def load_asset_versions(ctx, file_path):
     """Load assets and versions from a JSON file."""
     _resolver = ctx.obj["resolver"]
+    loaded_any = False
 
     for kind, assets in sorted(_parse_asset_json(file_path).items()):
         for name, departments in sorted(assets.items()):
@@ -193,7 +199,11 @@ def load_asset_versions(ctx, file_path):
                     )
 
             if asset and loaded:
-                print(f"\nLoaded Asset {asset.id} Versions{'\n\t'.join(loaded)}")
+                loaded_any = True
+                click.echo(f"\nLoaded Asset {asset.id} Versions{'\n\t'.join(loaded)}")
+
+    if not loaded_any:
+        click.echo("No Assets loaded")
 
 
 @cli.group(name="versions")
@@ -211,16 +221,23 @@ def versions():
 @click.pass_context
 def add_version(ctx, asset_name, asset_type, department, version_num, status):
     """Add an asset version."""
+    normalized_status = status.lower()
+    if normalized_status not in ["active", "inactive"]:
+        _fail(f"Invalid status '{status}'. Expected one of: active, inactive")
+
     asset = Asset(kind=asset_type, name=asset_name, resolver=ctx.obj["resolver"])
     try:
         version = asset.new_version(
             department=department,
             number=version_num,
-            active=status.lower() == "active",
+            active=normalized_status == "active",
         )
-        print("Created Version", version.id)
+        click.echo(f"Created Version {version.id}")
     except Exception as e:
-        logger.warning(e)
+        _fail(
+            f"Failed to create Version for {asset_type}/{asset_name} "
+            f"{department} {version_num}: {e}"
+        )
 
 
 @versions.command(name="get")
@@ -241,9 +258,9 @@ def get_version(ctx, asset_name, asset_type, department, version_num):
                 resolver=ctx.obj["resolver"],
             ),
         )
-        print("Version", version.id, "found")
+        click.echo(f"Version {version.id} found")
     except StopIteration:
-        print("No Version found")
+        click.echo("No Version found")
 
 
 @versions.command(name="list")
@@ -261,8 +278,7 @@ def list_versions(ctx, asset_name, asset_type, department, status, version):
     if status:
         valid = ["active", "inactive"]
         if status.lower() not in valid:
-            logger.warning(f"'{status}' isn't a valid status: {valid}")
-            return
+            _fail(f"Invalid status '{status}'. Expected one of: active, inactive")
         else:
             active = status.lower() == "active"
 
@@ -278,13 +294,13 @@ def list_versions(ctx, asset_name, asset_type, department, status, version):
             continue
 
         if not found:
-            print("\nFound Versions:\n")
+            click.echo("\nFound Versions:\n")
             found = True
 
-        print(version.id)
+        click.echo(version.id)
 
     if not found:
-        print("No Versions found")
+        click.echo("No Versions found")
 
 
 def main():

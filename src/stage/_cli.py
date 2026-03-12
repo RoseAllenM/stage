@@ -246,6 +246,47 @@ def get_version(ctx, asset_name, asset_type, department, version_num):
         print("No Version found")
 
 
+@versions.command(name="list")
+@click.argument("asset_name")
+@click.argument("asset_type")
+@click.option("--department", required=False, default=None, help="Filter by department")
+@click.option("--status", required=False, default=None, help="Filter by status")
+@click.option(
+    "--version", required=False, default=None, type=int, help="Filter by version"
+)
+@click.pass_context
+def list_versions(ctx, asset_name, asset_type, department, status, version):
+    """List all versions of an asset."""
+    active = None
+    if status:
+        valid = ["active", "inactive"]
+        if status.lower() not in valid:
+            logger.warning(f"'{status}' isn't a valid status: {valid}")
+            return
+        else:
+            active = status.lower() == "active"
+
+    found = False
+    for version in Version.find(
+        kind=asset_type,
+        name=asset_name,
+        department=department,
+        number=version,
+        resolver=ctx.obj["resolver"],
+    ):
+        if active not in [None, version.is_active]:
+            continue
+
+        if not found:
+            print("\nFound Versions:\n")
+            found = True
+
+        print(version.id)
+
+    if not found:
+        print("No Versions found")
+
+
 def main():
     """Entry point for the CLI."""
     cli(obj={})
